@@ -21,7 +21,7 @@ def ask_question():
     if not query:
         return jsonify({"detail": "Query not provided"}), 400
     try:
-        answer = gemini_qa.ask_question(query)
+        answer = gemini_qa.get_answer(query)
         return jsonify({"query": query, "answer": answer}), 200
     except Exception as e:
         return jsonify({"detail": str(e)}), 500

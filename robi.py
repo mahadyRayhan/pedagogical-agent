@@ -13,11 +13,11 @@ def main(query, load_resource, evaluation):
     if evaluation:
         gemini_qa.evaluate()
     elif query:
-        answer = gemini_qa.ask_question(query)
+        answer = gemini_qa.get_answer(query)
         print(f"Generated Answer: {answer}")
 
 if __name__ == "__main__":
-    query="What is a DDoS attack?"
+    query="I am at 'Room 1'. what is my task here?"
     load_resource=True
     evaluation=False
     main(query, load_resource, evaluation)

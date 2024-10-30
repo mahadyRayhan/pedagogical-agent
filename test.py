@@ -23,6 +23,8 @@ if __name__ == "__main__":
     #     print(result)
     
     question = "What is a DDoS attack?"
+    question = "I am at 'Room 1'. what is my task here?"
+    question = "I am at room 1, what should I do?"
     response = ask_question(question)
     if response:
         print(response)

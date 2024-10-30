@@ -1,21 +1,9 @@
 import os
 import time
 import glob
-import json
 import google.generativeai as genai
 from dotenv import load_dotenv
-from sklearn.metrics.pairwise import cosine_similarity
-import evaluate
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
-import numpy as np
-from nltk.translate.chrf_score import sentence_chrf
-from google.generativeai.types import StopCandidateException
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
-from sacrebleu.metrics import BLEU
-from bert_score import score as bert_score
 
 load_dotenv()
 
@@ -26,14 +14,9 @@ class GeminiQuestion_and_Answering:
     def __init__(self):
         self.model = None
         self.safety_settings = None
-        self.embed_model = None
         self.files = None
         self.chat_session = None
-        self.evaluation_data = None
-        self.rouge = evaluate.load("rouge")
-        self.bleu = evaluate.load("bleu")
-        self.meteor = evaluate.load("meteor")
-        self.sacrebleu = BLEU()
+        self.cached_responses = {}
 
     def load_resources(self, load_resource=False):
         if load_resource or not self.files:
@@ -42,9 +25,6 @@ class GeminiQuestion_and_Answering:
             self.wait_for_files_active(self.files)
             self.configure_genai()
 
-        if not self.embed_model:
-            self.embed_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        
     def upload_to_gemini(self, paths, mime_type=None):
         files = []
         for path in paths:
@@ -64,7 +44,7 @@ class GeminiQuestion_and_Answering:
             if file.state.name != "ACTIVE":
                 raise Exception(f"File {file.name} failed to process")
         print("...all files ready\n")
-    
+
     def configure_genai(self):
         self.safety_settings = {
             HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
@@ -82,113 +62,100 @@ class GeminiQuestion_and_Answering:
         self.model = genai.GenerativeModel(model_name="gemini-1.5-flash", generation_config=generation_config)
         self.chat_session = self.model.start_chat()
 
-    def ask_question(self, question):
-        print(question)
-        final_prompt = f"You are a question answering model. Please answer the following question briefly and to the point. The question is: {question}"
-        response = self.chat_session.send_message(final_prompt, safety_settings=self.safety_settings)
-        return response.text
+    def detect_query_type(self, query: str) -> str:
+        """Detect query type for document prioritization"""
+        location_keywords = ['room', 'location', 'where', 'place', 'area', 'task']
+        security_keywords = ['security', 'cyber', 'attack', 'threat', 'protection']
+        system_keywords = ['controller', 'system', 'asset', 'configuration']
+        
+        query_lower = query.lower()
+        
+        if any(keyword in query_lower for keyword in location_keywords):
+            return 'location'
+        elif any(keyword in query_lower for keyword in security_keywords):
+            return 'cybersecurity'
+        elif any(keyword in query_lower for keyword in system_keywords):
+            return 'system'
+        return 'other'
 
-    def load_evaluation_data(self):
-        with open("evaluation_example.json", "r") as f:
-            self.evaluation_data = json.load(f)
-        print("Loaded evaluation data successfully.")
-    
-    def evaluate(self):
-        if not self.evaluation_data:
-            self.load_evaluation_data()
+    def get_answer(self, query: str):
+        """Process query and generate answer using loaded files, returning the answer and execution times for each part."""
+        timings = {}
+        start_time = time.time()
 
-        results = []
-        for i, data in enumerate(self.evaluation_data['evaluation_data']):
-            question = data["question"]
-            expected_answer = data["answer"]
-            generated_answer = self.ask_question(question)
+        try:
+            # Get loaded files
+            if not self.files:
+                raise Exception("No files loaded. Please load files first using load_files()")
+            
+            timings['initial_check'] = time.time() - start_time  # Time for initial file check
+            
+            # Check cache first to save time on repeated queries
+            if query in self.cached_responses:
+                return self.cached_responses[query], {'cached': True, 'total_time': time.time() - start_time}
 
-            rouge_result = self.rouge.compute(predictions=[generated_answer], references=[expected_answer])
-            bleu_result = self.bleu.compute(predictions=[generated_answer], references=[[expected_answer]])
-            meteor_result = self.meteor.compute(predictions=[generated_answer], references=[expected_answer])
-            sacrebleu_result = self.sacrebleu.corpus_score([generated_answer], [[expected_answer]])
-            chrf_score = sentence_chrf(expected_answer, generated_answer)
+            # Prepare chat context and prompt
+            query_type = self.detect_query_type(query)
+            prompt_intro = "You are a question answering model. Please answer the following question briefly and to the point. If there are multiple points found, give them all as it is and list them in a list. The question is:"
+            prompt = prompt_intro + " " + query
+            
+            # Prioritize relevant files for location queries
+            relevant_files_start_time = time.time()
+            relevant_files = self.files
 
-            P, R, F1 = bert_score([generated_answer], [expected_answer], lang="en", verbose=False)
-
-            reference_embedding = self.embed_model.embed_query(expected_answer)
-            generated_embedding = self.embed_model.embed_query(generated_answer)
-            cosine_sim = cosine_similarity([reference_embedding], [generated_embedding])[0][0]
-
-            exact_match = 1 if generated_answer.lower() == expected_answer.lower() else 0
-            f1 = self.compute_f1(expected_answer, generated_answer)
-
-            results.append({
-                "question_id": i,
-                "rouge1": rouge_result["rouge1"],
-                "rouge2": rouge_result["rouge2"],
-                "rougeL": rouge_result["rougeL"],
-                "bleu": bleu_result["bleu"],
-                "sacrebleu": sacrebleu_result.score,
-                "meteor": meteor_result["meteor"],
-                "chrf": chrf_score,
-                "bert_score_f1": F1.item(),
-                "cosine_similarity": cosine_sim,
-                "exact_match": exact_match,
-                "f1_score": f1
+            # Separate and prioritize files based on query type
+            if query_type == 'location':
+                prioritized_files = [file for file in self.files if 'Rooms_And_Tasks.pdf' in file.display_name]
+                other_files = [file for file in self.files if 'Rooms_And_Tasks.pdf' not in file.display_name]
+                relevant_files = prioritized_files + other_files
+                
+            timings['relevant_files_selection'] = time.time() - relevant_files_start_time  # Time for file selection
+            
+            # Optimize the history update to keep full content only in prioritized files
+            history = []
+            for file in relevant_files:
+                if query_type == 'location' and 'Rooms_And_Tasks.pdf' in file.display_name:
+                    history.append({
+                        "role": "user",
+                        "parts": [file]  # Full content for prioritized files
+                    })
+                else:
+                    # Use minimal info for other files
+                    history.append({
+                        "role": "user",
+                        "parts": [f"Basic content from {file.display_name}"]
+                    })
+            
+            # Add prompt to history
+            history.append({
+                "role": "user",
+                "parts": [prompt]
             })
-        self.visualize_results(results)
-
-    def visualize_results(self, results):
-        df = pd.DataFrame(results)
-        fig, axes = plt.subplots(3, 2, figsize=(20, 24))
-
-        rouge_avg = df[["rouge1", "rouge2", "rougeL"]].mean()
-        rouge_avg.plot(kind="bar", ax=axes[0, 0], color=["blue", "green", "red"])
-        axes[0, 0].set_title("Average ROUGE Scores")
-        axes[0, 0].set_ylabel("Score")
-        axes[0, 0].set_xlabel("ROUGE Metrics")
-        axes[0, 0].text(0, rouge_avg[0], "Average Rouge-1 score shows lexical overlap.", ha="center", va="bottom")
-
-        df[["bleu", "sacrebleu", "meteor", "chrf"]].melt().plot(kind="box", ax=axes[0, 1])
-        axes[0, 1].set_title("Distribution of BLEU, SacreBLEU, METEOR, and chrF Scores")
-        axes[0, 1].set_ylabel("Score")
-        axes[0, 1].set_xlabel("Metrics")
-        axes[0, 1].text(0, df[["bleu", "sacrebleu"]].mean().mean(), "Boxplot showing score distribution.", ha="center", va="bottom")
-
-        axes[1, 0].scatter(df["bert_score_f1"], df["cosine_similarity"])
-        axes[1, 0].set_title("BERTScore F1 vs Cosine Similarity")
-        axes[1, 0].set_xlabel("BERTScore F1")
-        axes[1, 0].set_ylabel("Cosine Similarity")
-        axes[1, 0].text(0.5, 0.9, "Shows relationship between semantic and embedding similarity.", ha="center", va="bottom")
-
-        df[["exact_match", "f1_score"]].mean().plot(kind="bar", ax=axes[1, 1])
-        axes[1, 1].set_title("Average Exact Match and F1 Score")
-        axes[1, 1].set_ylabel("Score")
-        axes[1, 1].text(0.5, df["f1_score"].mean(), "F1 score diagram shows correctness of answers.", ha="center", va="bottom")
-
-        corr_matrix = df.drop("question_id", axis=1).corr()
-        sns.heatmap(corr_matrix, ax=axes[2, 0], cmap="coolwarm", annot=True, fmt=".2f", cbar_kws={"label": "Correlation"})
-        axes[2, 0].set_title("Correlation Between Metrics")
-        axes[2, 0].text(0.5, 0.9, "Heatmap showing correlation between evaluation metrics.", ha="center", va="bottom")
-
-        df["cosine_similarity"].hist(ax=axes[2, 1], bins=20)
-        axes[2, 1].set_title("Distribution of Cosine Similarities")
-        axes[2, 1].set_xlabel("Cosine Similarity")
-        axes[2, 1].set_ylabel("Frequency")
-        axes[2, 1].text(0.5, 0.9, "Histogram showing distribution of similarity scores.", ha="center", va="bottom")
-
-        plt.tight_layout()
-        plt.show()
-
-    def compute_f1(self, a_gold, a_pred):
-        gold_toks = set(a_gold.lower().split())
-        pred_toks = set(a_pred.lower().split())
-        common = gold_toks & pred_toks
-        if len(gold_toks) == 0 or len(pred_toks) == 0:
-            return int(gold_toks == pred_toks)
-        if len(common) == 0:
-            return 0
-        precision = len(common) / len(pred_toks)
-        recall = len(common) / len(gold_toks)
-        return (2 * precision * recall) / (precision + recall)
-
-
+            
+            # Apply history if this is a location query or complex question
+            if query_type == 'location':
+                self.chat_session.history = history
+            
+            # Get response from chat session
+            response_start_time = time.time()
+            # response = chat_session.send_message(prompt)
+            response = self.chat_session.send_message(prompt, safety_settings=self.safety_settings)
+            
+            end_time = time.time()
+            timings['response_time'] = end_time - response_start_time  # Time for getting response
+            timings['total_time'] = end_time - start_time  # Total time taken
+            
+            # Cache the response
+            self.cached_responses[query] = response.text
+            
+            return response.text, timings  # Return answer and timing breakdown
+            
+        except Exception as e:
+            end_time = time.time()
+            print(f"\nError occurred after {end_time - start_time:.2f} seconds")
+            print(f"Error processing query: {str(e)}")
+            return f"An error occurred: {str(e)}", timings  # Return the error and timings
+        
 # Main function to handle querying and evaluation
 def gemini_qa_system(query="", load_resource=True, evaluate=True):
     gemini_qa = GeminiQuestion_and_Answering()
@@ -199,9 +166,5 @@ def gemini_qa_system(query="", load_resource=True, evaluate=True):
     if evaluate:
         gemini_qa.evaluate()
     elif query:
-        answer = gemini_qa.ask_question(query)
+        answer = gemini_qa.get_answer(query)
         print(f"Generated Answer: {answer}")
-
-# Example usage:
-# gemini_qa_system(query="What is the capital of France?", load_resource=False, evaluate=False)
-# gemini_qa_system(load_resource=False, evaluate=True)
