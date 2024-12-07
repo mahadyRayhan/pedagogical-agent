@@ -8,7 +8,7 @@ WORKDIR /usr/app/
 COPY . /usr/app/
 
 # Copy the uSucceed_resource folder into the container
-# COPY uSucceed_resource /usr/app/uSucceed_resource
+COPY uSucceed_resource /usr/app/uSucceed_resource
 
 # Copy the .env file into the container
 COPY env /usr/app/.env
@@ -28,5 +28,4 @@ CMD ["python", "main.py"]
 
 # Build and run the Docker image
 # sudo docker build -t pa_app .
-# docker run -p 5000:5000 pa_app # For copied uSucceed_resource folder to docker
-# docker run -p 5000:5000 -v C:/Users/YourUsername/Desktop/uSucceed_resource:/usr/app/uSucceed_resource pa_app # For mounted uSucceed_resource folder to docker
+# docker run -p 5000:5000 pa_app
