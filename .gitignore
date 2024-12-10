@@ -1,0 +1,64 @@
+# Byte-compiled files
+*.py[cod]
+__pycache__/
+*.so
+
+# Virtual environments
+env/
+venv/
+ENV/
+.venv/
+
+# Distribution / packaging
+*.egg
+*.egg-info/
+dist/
+build/
+wheels/
+*.pyc
+
+# Testing
+.tox/
+.nox/
+.coverage
+coverage.xml
+*.cover
+*.log
+.cache
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# PyCharm files
+.idea/
+
+# VSCode files
+.vscode/
+
+# macOS files
+.DS_Store
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+# Secrets and configurations
+*.env
+.env.local
+*.key
+
+# Other
+*.pyo
+*.~*
+*.orig
