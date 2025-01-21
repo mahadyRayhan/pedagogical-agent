@@ -65,8 +65,21 @@ class GeminiQuestion_and_Answering:
     def detect_query_type(self, query: str) -> str:
         """Detect query type for document prioritization"""
         location_keywords = ['room', 'location', 'where', 'place', 'area', 'task']
-        security_keywords = ['security', 'cyber', 'attack', 'threat', 'protection']
-        system_keywords = ['controller', 'system', 'asset', 'configuration']
+        security_keywords = [
+            'security', 'cyber', 'attack', 'threat', 'protection', 'ddos', 'dns', 
+            'firewall', 'encryption', 'malware', 'phishing', 'ransomware', 
+            'vulnerability', 'penetration', 'breach', 'authentication', 'intrusion',
+            'zero-day', 'exploit', 'mitigation', 'defense', 'incident', 'forensics',
+            'safety', 'network security', 'data breach', 'password', 'access control'
+        ]
+
+        system_keywords = [
+            'controller', 'system', 'asset', 'configuration', 'architecture', 
+            'setup', 'installation', 'framework', 'protocol', 'integration', 
+            'hardware', 'software', 'deployment', 'infrastructure', 'operating system', 
+            'network', 'server', 'database', 'automation', 'monitoring', 
+            'maintenance', 'device', 'tool', 'resource management', 'scalability'
+        ]
         
         query_lower = query.lower()
         
@@ -77,6 +90,38 @@ class GeminiQuestion_and_Answering:
         elif any(keyword in query_lower for keyword in system_keywords):
             return 'system'
         return 'other'
+    
+    def generate_prompt(self, query_type: str, query: str) -> str:
+        """Generate context-aware prompt based on query type"""
+        prompts = {
+            'location': """You are a location-aware assistant. For questions about rooms or tasks:
+                        1. ONLY use information from 'Rooms_And_Tasks.pdf'
+                        2. Ignore all other documents completely for room/task questions
+                        3. Provide specific task details for the requested room
+                        4. If the information isn't in Rooms_And_Tasks.pdf, say "I cannot find information about this room/task in the available documents."
+                        
+                        Question: {query}""",
+                        
+            'cybersecurity': """You are a cybersecurity expert. For security questions:
+                            1. Prioritize information from cybersecurity guides and best practices
+                            2. Provide specific, actionable security information
+                            3. Only include room or system information if directly relevant to security
+                            
+                            Question: {query}""",
+            
+            'system': """You are a system configuration assistant. For system questions:
+                        1. Focus on technical configuration and asset details
+                        2. Reference room information only if relevant to system setup
+                        3. Include security considerations only if directly applicable
+                        
+                        Question: {query}""",
+            
+            'other': """You are a helpful assistant. Answer the following question ONLY if the information is found in the provided documents. If the requested information is not available in the resources, respond with: 
+                        "I cannot answer this question based on the available documents."
+                        Question: {query}"""
+        }
+        
+        return prompts[query_type].format(query=query)
 
     def get_answer(self, query: str):
         """Process query and generate answer using loaded files, returning the answer and execution times for each part."""
@@ -96,8 +141,9 @@ class GeminiQuestion_and_Answering:
 
             # Prepare chat context and prompt
             query_type = self.detect_query_type(query)
-            prompt_intro = "You are a question answering model. Please answer the following question briefly and to the point. If there are multiple points found, give them all as it is and list them in a list. The question is:"
-            prompt = prompt_intro + " " + query
+            prompt = self.generate_prompt(query_type, query)
+            # prompt_intro = "You are a question answering model. Please answer the following question briefly and to the point. If there are multiple points found, give them all as it is and list them in a list. The question is:"
+            # prompt = prompt_intro + " " + query
             
             # Prioritize relevant files for location queries
             relevant_files_start_time = time.time()
