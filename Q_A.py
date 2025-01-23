@@ -70,7 +70,8 @@ class GeminiQuestion_and_Answering:
             'firewall', 'encryption', 'malware', 'phishing', 'ransomware', 
             'vulnerability', 'penetration', 'breach', 'authentication', 'intrusion',
             'zero-day', 'exploit', 'mitigation', 'defense', 'incident', 'forensics',
-            'safety', 'network security', 'data breach', 'password', 'access control'
+            'safety', 'network security', 'data breach', 'password', 'access control', 'IDS', 'IPS',
+            'IoT security', 'cloud security', 'endpoint security', 'web security', 'mobile security'
         ]
 
         system_keywords = [

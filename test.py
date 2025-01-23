@@ -23,8 +23,16 @@ if __name__ == "__main__":
     #     print(result)
     
     question = "What is a DDoS attack?"
-    question = "I am at 'Room 1'. what is my task here?"
     question = "I am at room 1, what should I do?"
+    question = "what is 5+5?"
+    question = "what is DNS?"
+    question = "is earth flat?"
+    question = "what is the capital of USA?"
+    question = "who killed JFK?"
+    question = "I am at 'Room 1'. what is my task here?"
+    question = "What is Phishing?"
+    question = "What are cybersecurity best practices?"
+    question = "What is IoT?"
     response = ask_question(question)
     if response:
         print(response)
