@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import glob
 import google.generativeai as genai
@@ -17,6 +18,14 @@ class GeminiQuestion_and_Answering:
         self.files = None
         self.chat_session = None
         self.cached_responses = {}
+
+    def extract_user_name(self, query):
+        """Extract user's name from the query if present."""
+        
+        prompt = 'Extract the user name from the query: ' + query
+        response = self.chat_session.send_message(prompt, safety_settings=self.safety_settings)
+        self.cached_responses['USER'] = response.text
+        return response.text
 
     def load_resources(self, load_resource=False):
         if load_resource or not self.files:
@@ -94,12 +103,15 @@ class GeminiQuestion_and_Answering:
     
     def generate_prompt(self, query_type: str, query: str) -> str:
         """Generate context-aware prompt based on query type"""
+        user_name = self.cached_responses['USER'] if self.cached_responses['USER'] else "The User"
+        print(f"User name: {user_name}")
         prompts = {
-            'location': """You are a location-aware assistant. For questions about rooms or tasks:
+            'location': f"""The user who is asking the question is {user_name}.You are a location-aware assistant. For questions about rooms or tasks:
                         1. ONLY use information from 'Rooms_And_Tasks.pdf'
                         2. Ignore all other documents completely for room/task questions
                         3. Provide specific task details for the requested room
                         4. If the information isn't in Rooms_And_Tasks.pdf, say "I cannot find information about this room/task in the available documents."
+                        5. Please make sure to provide the best user friendly response using the user's name.
                         
                         Question: {query}""",
                         
@@ -128,8 +140,11 @@ class GeminiQuestion_and_Answering:
         """Process query and generate answer using loaded files, returning the answer and execution times for each part."""
         timings = {}
         start_time = time.time()
-
-        try:
+                
+        try:    
+            if 'USER' not in self.cached_responses:
+                self.extract_user_name(query)
+                
             # Get loaded files
             if not self.files:
                 raise Exception("No files loaded. Please load files first using load_files()")
