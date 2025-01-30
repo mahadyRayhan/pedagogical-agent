@@ -18,14 +18,31 @@ class GeminiQuestion_and_Answering:
         self.files = None
         self.chat_session = None
         self.cached_responses = {}
+        self.cached_responses['USER'] = "User"
 
-    def extract_user_name(self, query):
-        """Extract user's name from the query if present."""
+    # def extract_user_name(self, query):        
+    #     prompt = 'Extract the user name from the query: ' + query
+    #     response = self.chat_session.send_message(prompt, safety_settings=self.safety_settings)
+    #     self.cached_responses['USER'] = response.text
+    #     return response.text
+    
+    def extract_user_name(self, query):        
+        """Extracts and updates the user name dynamically from a query."""
         
-        prompt = 'Extract the user name from the query: ' + query
-        response = self.chat_session.send_message(prompt, safety_settings=self.safety_settings)
-        self.cached_responses['USER'] = response.text
-        return response.text
+        # Check if the query explicitly asks to remember a name
+        explicit_name_pattern = r"Hi, I am (\w+)|My name is (\w+)|Call me (\w+)"
+        match = re.search(explicit_name_pattern, query, re.IGNORECASE)
+
+        if match:
+            user_name = next(filter(None, match.groups()))  # Extract the first non-None match
+            self.cached_responses['USER'] = user_name
+            return user_name  # Return extracted name
+        
+        # If the cache is already set, return the existing name
+        if 'USER' in self.cached_responses:
+            return self.cached_responses['USER']
+        
+        return None  # No user name found
 
     def load_resources(self, load_resource=False):
         if load_resource or not self.files:
@@ -104,7 +121,6 @@ class GeminiQuestion_and_Answering:
     def generate_prompt(self, query_type: str, query: str) -> str:
         """Generate context-aware prompt based on query type"""
         user_name = self.cached_responses['USER'] if self.cached_responses['USER'] else "The User"
-        print(f"User name: {user_name}")
         prompts = {
             'location': f"""The user who is asking the question is {user_name}.You are a location-aware assistant. For questions about rooms or tasks:
                         1. ONLY use information from 'Rooms_And_Tasks.pdf'
@@ -141,10 +157,16 @@ class GeminiQuestion_and_Answering:
         timings = {}
         start_time = time.time()
                 
-        try:    
-            if 'USER' not in self.cached_responses:
-                self.extract_user_name(query)
-                
+        try:  
+            # Extract name once to avoid redundant function calls
+
+            old_user_name = self.cached_responses.get('USER', 'User')
+            new_user_name = self.extract_user_name(query)
+            # If a new valid user name is found and it's different from the cached name
+            if new_user_name and new_user_name.lower() != 'user' and new_user_name != old_user_name:
+                self.cached_responses['USER'] = new_user_name  # Update cache
+                return f"Hi! {new_user_name}. Thank you for sharing your name. I will use this for future reference.", 0.0
+
             # Get loaded files
             if not self.files:
                 raise Exception("No files loaded. Please load files first using load_files()")
@@ -158,8 +180,6 @@ class GeminiQuestion_and_Answering:
             # Prepare chat context and prompt
             query_type = self.detect_query_type(query)
             prompt = self.generate_prompt(query_type, query)
-            # prompt_intro = "You are a question answering model. Please answer the following question briefly and to the point. If there are multiple points found, give them all as it is and list them in a list. The question is:"
-            # prompt = prompt_intro + " " + query
             
             # Prioritize relevant files for location queries
             relevant_files_start_time = time.time()
@@ -217,7 +237,8 @@ class GeminiQuestion_and_Answering:
             print(f"\nError occurred after {end_time - start_time:.2f} seconds")
             print(f"Error processing query: {str(e)}")
             return f"An error occurred: {str(e)}", timings  # Return the error and timings
-        
+
+    
 # Main function to handle querying and evaluation
 def gemini_qa_system(query="", load_resource=True, evaluate=True):
     gemini_qa = GeminiQuestion_and_Answering()

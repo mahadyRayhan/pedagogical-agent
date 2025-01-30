@@ -36,7 +36,9 @@ if __name__ == "__main__":
     # question = "Hi"
     # Query to set the name
     question = "I am at room 1, what should I do?"
-    # question = "Hi, I am Jack. Remember my name, and now on use this name to mention me if necessary."
+    question = "Hi, I am Jack. Remember my name, and now on use this name to mention me if necessary."
+    question = "I am at 'Room 1'. what is my task here?"
+    # question = "Call me Sarah."
     response = ask_question(question)
     if response:
         print(response)
