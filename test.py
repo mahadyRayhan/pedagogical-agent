@@ -23,7 +23,7 @@ if __name__ == "__main__":
     #     print(result)
     
     question = "What is a DDoS attack?"
-    question = "I am at room 1, what should I do?"
+    # question = "I am at room 1, what should I do?"
     # question = "what is 5+5?"
     # question = "what is DNS?"
     # question = "is earth flat?"
@@ -32,13 +32,19 @@ if __name__ == "__main__":
     # question = "I am at 'Room 1'. what is my task here?"
     # question = "What is Phishing?"
     # question = "What are cybersecurity best practices?"
-    # question = "What is IoT?"
-    # question = "Hi"
-    # Query to set the name
+    # question = "What is IoT?" #no answer. resource just has the wort IoT. but does not mentions what it is.
+    # question = "What is cybersecurity?"
+    # question = "What is Integrity?"
+    # question = "What is VPN?"
+    # question = "What quality security system include?"
+    # question = "What is Malware?"
     question = "I am at room 1, what should I do?"
-    question = "Hi, I am Jack. Remember my name, and now on use this name to mention me if necessary."
-    question = "I am at 'Room 1'. what is my task here?"
+    # question = "Hi, I am Jack. Remember my name, and now on use this name to mention me if necessary."
+    # question = "I am at 'Room 1'. what is my task here?"
     # question = "Call me Sarah."
+    # question = 'what is a spoofing attack?'
+    # question = 'can you call me Noah moving forward?'
+    # question = 'who are you?'
     response = ask_question(question)
     if response:
         print(response)

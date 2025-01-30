@@ -121,8 +121,9 @@ class GeminiQuestion_and_Answering:
     def generate_prompt(self, query_type: str, query: str) -> str:
         """Generate context-aware prompt based on query type"""
         user_name = self.cached_responses['USER'] if self.cached_responses['USER'] else "The User"
+        print(f"generate response User name: {user_name}")
         prompts = {
-            'location': f"""The user who is asking the question is {user_name}.You are a location-aware assistant. For questions about rooms or tasks:
+            'location': f"""The user who is asking the question is {user_name}. You are a location-aware AI-based chatbot assistant, named 'Robi', designed to answer questions and assist users in the VR learning environment. For questions about rooms or tasks:
                         1. ONLY use information from 'Rooms_And_Tasks.pdf'
                         2. Ignore all other documents completely for room/task questions
                         3. Provide specific task details for the requested room
@@ -131,22 +132,22 @@ class GeminiQuestion_and_Answering:
                         
                         Question: {query}""",
                         
-            'cybersecurity': """You are a cybersecurity expert. For security questions:
+            'cybersecurity': """You are 'Robi', an AI-based chatbot assistant, designed as a cybersecurity expert. For security questions:
                             1. Prioritize information from cybersecurity guides and best practices
                             2. Provide specific, actionable security information
                             3. Only include room or system information if directly relevant to security
                             
                             Question: {query}""",
             
-            'system': """You are a system configuration assistant. For system questions:
+            'system': """You are 'Robi', an AI-based chatbot assistant, designed as a system configuration assistant. For system questions:
                         1. Focus on technical configuration and asset details
                         2. Reference room information only if relevant to system setup
                         3. Include security considerations only if directly applicable
                         
                         Question: {query}""",
             
-            'other': """You are a helpful assistant. Answer the following question ONLY if the information is found in the provided documents. If the requested information is not available in the resources, respond with: 
-                        "I cannot answer this question based on the available documents."
+            'other': """You are 'Robi', an AI-based chatbot assistant, designed to answer questions and assist users in the VR learning environment. Answer the following question ONLY if the information is found in the provided documents. If the requested information is not available in the resources, respond with: 
+                        "I am an AI-based chatbot assistant designed to answer questions about cyber security and your sorounding VR environemnt. I cannot answer this question based on the available resources."
                         Question: {query}"""
         }
         
@@ -166,7 +167,7 @@ class GeminiQuestion_and_Answering:
             if new_user_name and new_user_name.lower() != 'user' and new_user_name != old_user_name:
                 self.cached_responses['USER'] = new_user_name  # Update cache
                 return f"Hi! {new_user_name}. Thank you for sharing your name. I will use this for future reference.", 0.0
-
+                        
             # Get loaded files
             if not self.files:
                 raise Exception("No files loaded. Please load files first using load_files()")
@@ -175,7 +176,16 @@ class GeminiQuestion_and_Answering:
             
             # Check cache first to save time on repeated queries
             if query in self.cached_responses:
-                return self.cached_responses[query], {'cached': True, 'total_time': time.time() - start_time}
+                chat_response = self.cached_responses[query]
+                match = re.search(r'(\w+)(?=!)', chat_response)
+                if match:
+                    current_user_name = match.group(1)
+                if current_user_name != self.cached_responses['USER']:
+                    chat_response= chat_response.replace(current_user_name, self.cached_responses['USER'])
+                # Cache the response
+                self.cached_responses[query] = chat_response
+            
+                return chat_response, {'cached': True, 'total_time': time.time() - start_time}
 
             # Prepare chat context and prompt
             query_type = self.detect_query_type(query)
