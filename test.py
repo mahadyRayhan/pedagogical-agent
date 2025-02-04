@@ -38,13 +38,21 @@ if __name__ == "__main__":
     # question = "What is VPN?"
     # question = "What quality security system include?"
     # question = "What is Malware?"
-    question = "I am at room 1, what should I do?"
+    question = "I am at room 4, what should I do?"
     # question = "Hi, I am Jack. Remember my name, and now on use this name to mention me if necessary."
     # question = "I am at 'Room 1'. what is my task here?"
     # question = "Call me Sarah."
     # question = 'what is a spoofing attack?'
     # question = 'can you call me Noah moving forward?'
     # question = 'who are you?'
+    # question = 'how can i move forward?'
+    # question = 'how can i summon Robi?'
+    # question = 'How can i Handle an object?'
+    question = "How can I move?"
+    question = "How can I grab things?"
+    question = "Do I just bend and press a button to pick up an object?"
+    question = "How do I interact with a canvas/UI?"
+    question = "How do i click on icons in the UI?"
     response = ask_question(question)
     if response:
         print(response)

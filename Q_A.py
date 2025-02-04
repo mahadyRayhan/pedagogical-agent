@@ -2,6 +2,7 @@ import os
 import re
 import time
 import glob
+import PyPDF2
 import google.generativeai as genai
 from dotenv import load_dotenv
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
@@ -19,7 +20,17 @@ class GeminiQuestion_and_Answering:
         self.chat_session = None
         self.cached_responses = {}
         self.cached_responses['USER'] = "User"
-
+        self.nav_path = "uSucceed_resource/NAVIGATION_control.pdf"
+        self.nav_guide = ""
+        
+    def read_pdf(self):
+        with open(self.nav_path, "rb") as file:
+            reader = PyPDF2.PdfReader(file)
+            text = []
+            for page in reader.pages:
+                text.append(page.extract_text())
+            self.nav_guide = "\n".join(text)
+            
     # def extract_user_name(self, query):        
     #     prompt = 'Extract the user name from the query: ' + query
     #     response = self.chat_session.send_message(prompt, safety_settings=self.safety_settings)
@@ -108,6 +119,16 @@ class GeminiQuestion_and_Answering:
             'maintenance', 'device', 'tool', 'resource management', 'scalability'
         ]
         
+        navigation_interaction_keywords = [
+            'move', 'go', 'navigate', 'walk', 'forward', 'backward', 'strafe', 
+            'left', 'right', 'joystick', 'speed', 'pace', 'rotate', 'turn', 
+            'perspective', 'direction', 'adjust', 'push', 'pressure', 'click',
+            'button', 'trigger', 'grip', 'A button', 'B button', 
+            'interact', 'grab', 'hold', 'drop', 'summon', 'Robi', 
+            'object', 'icon', 'box', 'select', 'outline', 'highlight', 
+            'hover', 'conversation', 'appear', 'materialize', 'hear', 
+            'respond', 'audio input', 'release', 'troubleshoot']
+        
         query_lower = query.lower()
         
         if any(keyword in query_lower for keyword in location_keywords):
@@ -116,37 +137,49 @@ class GeminiQuestion_and_Answering:
             return 'cybersecurity'
         elif any(keyword in query_lower for keyword in system_keywords):
             return 'system'
+        elif any(keyword in query_lower for keyword in navigation_interaction_keywords):
+            return 'navigation'
         return 'other'
     
     def generate_prompt(self, query_type: str, query: str) -> str:
         """Generate context-aware prompt based on query type"""
         user_name = self.cached_responses['USER'] if self.cached_responses['USER'] else "The User"
+        self.read_pdf()
         print(f"generate response User name: {user_name}")
         prompts = {
             'location': f"""The user who is asking the question is {user_name}. You are a location-aware AI-based chatbot assistant, named 'Robi', designed to answer questions and assist users in the VR learning environment. For questions about rooms or tasks:
-                        1. ONLY use information from 'Rooms_And_Tasks.pdf'
+                        1. ONLY use information from 'CONTEXT_Rooms_And_Tasks.pdf'
                         2. Ignore all other documents completely for room/task questions
                         3. Provide specific task details for the requested room
-                        4. If the information isn't in Rooms_And_Tasks.pdf, say "I cannot find information about this room/task in the available documents."
+                        4. If the information isn't in CONTEXT_Rooms_And_Tasks.pdf, say "I cannot find information about this room/task in the available documents."
                         5. Please make sure to provide the best user friendly response using the user's name.
                         
                         Question: {query}""",
                         
-            'cybersecurity': """You are 'Robi', an AI-based chatbot assistant, designed as a cybersecurity expert. For security questions:
+            'navigation': f"""The user who is asking the question is {user_name}. You are a system and navigation aware AI-based chatbot assistant, named 'Robi', designed to answer questions and assist users in the VR learning environment. For navigation and interaction questions:
+                            1. ONLY use information from {self.nav_guide}
+                            2. Ignore all other documents completely for navigation questions
+                            3. Provide specific Joystick control for the requested action (like moving forward, turning, etc.)
+                            4. If the information isn't in {self.nav_guide}, say "I cannot find information about this navigation/interaction in the available documents."
+                            5. Please make sure to provide the best user friendly response using the user's name using only the available resource.
+                            
+                            Question: {query}""",
+                        
+            'cybersecurity': f"""You are 'Robi', an AI-based chatbot assistant, designed as a cybersecurity expert. For security questions:
                             1. Prioritize information from cybersecurity guides and best practices
                             2. Provide specific, actionable security information
                             3. Only include room or system information if directly relevant to security
                             
                             Question: {query}""",
             
-            'system': """You are 'Robi', an AI-based chatbot assistant, designed as a system configuration assistant. For system questions:
+            'system': f"""You are 'Robi', an AI-based chatbot assistant, designed as a system configuration assistant. For system questions:
                         1. Focus on technical configuration and asset details
                         2. Reference room information only if relevant to system setup
                         3. Include security considerations only if directly applicable
                         
                         Question: {query}""",
             
-            'other': """You are 'Robi', an AI-based chatbot assistant, designed to answer questions and assist users in the VR learning environment. Answer the following question ONLY if the information is found in the provided documents. If the requested information is not available in the resources, respond with: 
+            'other': f"""You are 'Robi', an AI-based chatbot assistant, designed to answer questions and assist users in the VR learning environment. Answer the following question ONLY if the information is found in the provided documents. If the requested information is not available in the resources, respond with: 
                         "I am an AI-based chatbot assistant designed to answer questions about cyber security and your sorounding VR environemnt. I cannot answer this question based on the available resources."
                         Question: {query}"""
         }
@@ -156,8 +189,7 @@ class GeminiQuestion_and_Answering:
     def get_answer(self, query: str):
         """Process query and generate answer using loaded files, returning the answer and execution times for each part."""
         timings = {}
-        start_time = time.time()
-                
+        start_time = time.time()              
         try:  
             # Extract name once to avoid redundant function calls
 
@@ -197,8 +229,8 @@ class GeminiQuestion_and_Answering:
 
             # Separate and prioritize files based on query type
             if query_type == 'location':
-                prioritized_files = [file for file in self.files if 'Rooms_And_Tasks.pdf' in file.display_name]
-                other_files = [file for file in self.files if 'Rooms_And_Tasks.pdf' not in file.display_name]
+                prioritized_files = [file for file in self.files if 'CONTEXT_Rooms_And_Tasks.pdf' in file.display_name]
+                other_files = [file for file in self.files if 'CONTEXT_Rooms_And_Tasks.pdf' not in file.display_name]
                 relevant_files = prioritized_files + other_files
                 
             timings['relevant_files_selection'] = time.time() - relevant_files_start_time  # Time for file selection
