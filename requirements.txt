@@ -22,3 +22,4 @@ uvicorn==0.30.6
 flask
 rouge_score
 sentence-transformers==3.2.0
+PyPDF2==3.0.1
