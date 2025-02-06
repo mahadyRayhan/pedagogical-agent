@@ -22,6 +22,7 @@ class GeminiQuestion_and_Answering:
         self.cached_responses['USER'] = "User"
         self.nav_path = "uSucceed_resource/NAVIGATION_control.pdf"
         self.nav_guide = ""
+        current_user_name = ""
         
     def read_pdf(self):
         with open(self.nav_path, "rb") as file:
@@ -131,6 +132,9 @@ class GeminiQuestion_and_Answering:
         
         query_lower = query.lower()
         
+        if not isinstance(query_lower, str):
+            raise ValueError("Query must be a string")
+        
         if any(keyword in query_lower for keyword in location_keywords):
             return 'location'
         elif any(keyword in query_lower for keyword in security_keywords):
@@ -143,7 +147,7 @@ class GeminiQuestion_and_Answering:
     
     def generate_prompt(self, query_type: str, query: str) -> str:
         """Generate context-aware prompt based on query type"""
-        user_name = self.cached_responses['USER'] if self.cached_responses['USER'] else "The User"
+        user_name = self.cached_responses['USER'] if self.cached_responses['USER'] else "User"
         self.read_pdf()
         print(f"generate response User name: {user_name}")
         prompts = {
@@ -215,9 +219,9 @@ class GeminiQuestion_and_Answering:
                 chat_response = self.cached_responses[query]
                 match = re.search(r'(\w+)(?=!)', chat_response)
                 if match:
-                    current_user_name = match.group(1)
-                if current_user_name != self.cached_responses['USER']:
-                    chat_response= chat_response.replace(current_user_name, self.cached_responses['USER'])
+                    self.current_user_name = match.group(1)
+                if self.current_user_name != self.cached_responses['USER']:
+                    chat_response= chat_response.replace(self.current_user_name, self.cached_responses['USER'])
                 # Cache the response
                 self.cached_responses[query] = chat_response
             

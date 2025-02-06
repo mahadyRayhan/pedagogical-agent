@@ -22,37 +22,53 @@ if __name__ == "__main__":
     # if result:
     #     print(result)
     
-    question = "What is a DDoS attack?"
-    # question = "I am at room 1, what should I do?"
-    # question = "what is 5+5?"
-    # question = "what is DNS?"
-    # question = "is earth flat?"
-    # question = "what is the capital of USA?"
-    # question = "who killed JFK?"
-    # question = "I am at 'Room 1'. what is my task here?"
-    # question = "What is Phishing?"
-    # question = "What are cybersecurity best practices?"
-    # question = "What is IoT?" #no answer. resource just has the wort IoT. but does not mentions what it is.
-    # question = "What is cybersecurity?"
-    # question = "What is Integrity?"
-    # question = "What is VPN?"
-    # question = "What quality security system include?"
-    # question = "What is Malware?"
-    question = "I am at room 4, what should I do?"
-    # question = "Hi, I am Jack. Remember my name, and now on use this name to mention me if necessary."
-    # question = "I am at 'Room 1'. what is my task here?"
-    # question = "Call me Sarah."
-    # question = 'what is a spoofing attack?'
-    # question = 'can you call me Noah moving forward?'
-    # question = 'who are you?'
-    # question = 'how can i move forward?'
-    # question = 'how can i summon Robi?'
-    # question = 'How can i Handle an object?'
-    question = "How can I move?"
-    question = "How can I grab things?"
-    question = "Do I just bend and press a button to pick up an object?"
-    question = "How do I interact with a canvas/UI?"
-    question = "How do i click on icons in the UI?"
+   questions = [
+    "What is a DDoS attack?",
+    "I am at room 1, what should I do?",
+    "What is 5+5?",
+    "What is DNS?",
+    "Is earth flat?",
+    "What is the capital of USA?",
+    "Who killed JFK?",
+    "I am at 'Room 1'. What is my task here?",
+    "What is Phishing?",
+    "What are cybersecurity best practices?",
+    "What is IoT?",  # No answer. Resource just has the word IoT but does not mention what it is.
+    "What is cybersecurity?",
+    "What is Integrity?",
+    "What is VPN?",
+    "What quality security system includes?",
+    "What is Malware?",
+    "I am at room 4, what should I do?",
+    "Hi, I am Jack. Remember my name, and from now on use this name to mention me if necessary.",
+    "I am at 'Room 1'. What is my task here?",
+    "Call me Sarah.",
+    "What is a spoofing attack?",
+    "Can you call me Noah moving forward?",
+    "Who are you?",
+    "How can I move forward?",
+    "How can I summon Robi?",
+    "How can I handle an object?",
+    "How can I move?",
+    "How can I grab things?",
+    "Do I just bend and press a button to pick up an object?",
+    "How do I interact with a canvas/UI?",
+    "How do I click on icons in the UI?",
+    "I'm playing the icon-matching game and I'm trying to grab icons. How can I do so?"
+]
+
+for question in questions:
     response = ask_question(question)
     if response:
-        print(response)
+        answer_text = response['answer'][0] if isinstance(response['answer'], list) else response['answer']
+        query = response.get('query', question)
+        metadata = response['answer'][1] if isinstance(response['answer'], list) and isinstance(response['answer'][1], dict) else {}
+
+        print(f"Q: {query}\nA: {answer_text.strip()}\n")
+        
+        if metadata:
+            print("⏳ Response Metadata:")
+            for key, value in metadata.items():
+                print(f"   - {key.replace('_', ' ').capitalize()}: {value:.4f}")
+        
+        print("\n" + "="*50 + "\n")  # Separator for readability
