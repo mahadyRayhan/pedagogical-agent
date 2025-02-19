@@ -54,7 +54,9 @@ if __name__ == "__main__":
     "Do I just bend and press a button to pick up an object?",
     "How do I interact with a canvas/UI?",
     "How do I click on icons in the UI?",
-    "I'm playing the icon-matching game and I'm trying to grab icons. How can I do so?"
+    "I'm playing the icon-matching game and I'm trying to grab icons. How can I do so?",
+    "where am i, roomname: room3",
+    "where am i, roomname: room2"
 ]
 
 for question in questions:

@@ -1,16 +1,26 @@
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables early
+
+import os
 from flask import Flask, request, jsonify
-from Q_A import GeminiQuestion_and_Answering
+from multi_agent_system.resource_manager import ResourceManager
+from multi_agent_system.agent_coordinator import AgentCoordinator
+
+# Optional: Check that the API key is loaded
+if not os.getenv("GOOGLE_API_KEY"):
+    raise Exception("GOOGLE_API_KEY is not set. Please check your .env file.")
 
 app = Flask(__name__)
 
-# Initialize the GeminiQuestion_and_Answering system at startup
-gemini_qa = GeminiQuestion_and_Answering()
-gemini_qa.load_resources(load_resource=True)
+# Initialize resources and agent coordinator at startup
+resource_manager = ResourceManager(resource_dir="uSucceed_resource")
+resource_manager.load_resources()
+coordinator = AgentCoordinator(resource_manager)
 
 @app.route("/reload_resource", methods=["GET"])
 def reload_resource():
     try:
-        gemini_qa.load_resources(load_resource=True)  # Reload the resources
+        resource_manager.load_resources()
         return jsonify({"detail": "Resources reloaded successfully."}), 200
     except Exception as e:
         return jsonify({"detail": f"Failed to reload resources: {str(e)}"}), 500
@@ -21,8 +31,8 @@ def ask_question():
     if not query:
         return jsonify({"detail": "Query not provided"}), 400
     try:
-        answer = gemini_qa.get_answer(query)
-        return jsonify({"query": query, "answer": answer}), 200
+        answer, timings = coordinator.route_query(query)
+        return jsonify({"query": query, "answer": answer, "timings": timings}), 200
     except Exception as e:
         return jsonify({"detail": str(e)}), 500
 
