@@ -10,12 +10,33 @@ class LocationAgent(BaseAgent):
         Extracts a room name from the query if present.
         Example: "where am i, roomname: room3" returns "room3".
         """
-        room_pattern = r"roomname:\s*(\w+)"
+        # room_pattern = r"roomname:\s*(\w+)"
+        room_pattern = r"(?:roomname|room name|current room):?\s*(\w+)"
         match = re.search(room_pattern, query, re.IGNORECASE)
         if match:
             return match.group(1)
         return None
     
+    def extract_room_name_API(self, query: str) -> str:
+        """
+        Extracts a room name from the query using an API call.
+        Example: "where am i, roomname: room3" returns "room3".
+        """
+        extraction_prompt = (
+            f"Extract the room name from the following query and only return the room name without any additional text:\n\n"
+            f"Query: {query}\n\n"
+            f"Room name:"
+        )
+        # Call the generative API to extract the room name.
+        response = self.chat_session.send_message(extraction_prompt, safety_settings=self.safety_settings)
+        extracted_room = response.text.strip()
+        
+        # Optionally add post-processing if needed.
+        if extracted_room:
+            return extracted_room
+        else:
+            return None
+
     def get_answer(self, query: str):
         """
         If the query contains 'where am I', extract and return the room name directly.
