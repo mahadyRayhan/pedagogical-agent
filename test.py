@@ -56,7 +56,8 @@ if __name__ == "__main__":
     "How do I click on icons in the UI?",
     "I'm playing the icon-matching game and I'm trying to grab icons. How can I do so?",
     "where am i, roomname: room3",
-    "where am i, roomname: room2"
+    "where am i, roomname: room2",
+    "what am i doing in station 2?"
 ]
 
 for question in questions:

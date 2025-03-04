@@ -62,3 +62,4 @@ ehthumbs.db
 *.pyo
 *.~*
 *.orig
+.DS_Store
