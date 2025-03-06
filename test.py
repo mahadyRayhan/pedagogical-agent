@@ -57,7 +57,11 @@ if __name__ == "__main__":
     "I'm playing the icon-matching game and I'm trying to grab icons. How can I do so?",
     "where am i, roomname: room3",
     "where am i, roomname: room2",
-    "what am i doing in station 2?"
+    "I am looking at a cube that has an exit sign on it, what does it mean?",
+    "I am looking at a cube that has an exit written on it, what does it mean?",
+    "I am looking at a cube that has an x or cross sign on it, what does it mean?",
+    "I am looking at a cube that has a list and a lock sign on it, what does it mean?",
+    "I am looking at a cube that has a bomb sign on it, what does it mean?",
 ]
 
 for question in questions:

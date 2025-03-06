@@ -63,9 +63,10 @@ class ResourceManager:
         Returns a prioritized list of files based on the agent type.
         For example, the LocationAgent prioritizes the 'CONTEXT_Rooms_And_Tasks.pdf'.
         """
-        if agent_type == "location":
-            prioritized = [f for f in self.files if "CONTEXT_Rooms_And_Tasks.pdf" in f.display_name]
-            others = [f for f in self.files if "CONTEXT_Rooms_And_Tasks.pdf" not in f.display_name]
-            return prioritized + others
+        # if agent_type == "location":
+        #     prioritized = [f for f in self.files if "CONTEXT_Rooms_And_Tasks.pdf" in f.display_name]
+        #     print(f"Prioritized files: {[f.display_name for f in prioritized]}")
+        #     others = [f for f in self.files if "CONTEXT_Rooms_And_Tasks.pdf" not in f.display_name]
+        #     return prioritized + others
         # For other agent types, return all files.
         return self.files
