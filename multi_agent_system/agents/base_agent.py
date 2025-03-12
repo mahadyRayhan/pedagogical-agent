@@ -65,14 +65,23 @@ class BaseAgent:
         """
         timings = {}
         start_time = time.time()
+        first_answer = ''
 
         # Check for explicit user name in the query
         old_user_name = self.user_cache.get("USER", "User")
         new_user_name = self.extract_user_name(query)
         if new_user_name and new_user_name.lower() != "user" and new_user_name != old_user_name:
             self.user_cache["USER"] = new_user_name
-            return (f"Hi! {new_user_name}. Thank you for sharing your name. I will use this for future reference.",
+            pattern = r'(?<=[?.!])\s+'
+            sentences = re.split(pattern, query)
+            sentences = [sentence.strip() + (query[len(sentence):][0] if len(query) > len(sentence) else '') for sentence in sentences]
+            remaining_query = sentences[-1] if len(sentences) > 1 else None
+            print("Remaining query after name extraction:", remaining_query)
+            if remaining_query is None:
+                return (f"Hi! {new_user_name}. Thank you for sharing your name. I will use this for future reference.",
                     {"name_update": 0.0})
+            else:
+                first_answer = f"Hi! {new_user_name}. Thank you for sharing your name. I will use this for future reference."
 
         # Ensure resources are loaded
         if not self.resource_manager.loaded:
@@ -81,7 +90,6 @@ class BaseAgent:
         # Generate prompt using specialized logic
         prompt = self.generate_prompt(query)
         user_name = self.user_cache.get("USER", "User")
-        print(f"Processing query for user: {user_name}")
 
         # Build history with relevant file information
         relevant_files = self.resource_manager.get_files_for_agent(self.agent_type)
@@ -104,4 +112,12 @@ class BaseAgent:
 
         # Cache and return the response.
         self.user_cache[query] = response.text
-        return response.text, timings
+        
+        if first_answer == '':
+            final_response = first_answer + response.text
+            return response.text, timings
+        else:
+            cleaned_response = re.sub(r"(?i)^hi\s+(" + self.user_cache.get("USER", "User") + "[!,:]?\s+)?", "", response.text).strip()
+            final_response = f"{first_answer} {cleaned_response}".strip()
+            
+            return final_response, timings
