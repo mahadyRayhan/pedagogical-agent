@@ -75,7 +75,7 @@ class BaseAgent:
             pattern = r'(?<=[?.!])\s+'
             sentences = re.split(pattern, query)
             sentences = [sentence.strip() + (query[len(sentence):][0] if len(query) > len(sentence) else '') for sentence in sentences]
-            remaining_query = sentences[-1] if len(sentences) > 1 else None
+            remaining_query = sentences[1] if len(sentences) > 1 else None
             print("Remaining query after name extraction:", remaining_query)
             if remaining_query is None:
                 return (f"Hi! {new_user_name}. Thank you for sharing your name. I will use this for future reference.",
@@ -89,7 +89,7 @@ class BaseAgent:
 
         # Generate prompt using specialized logic
         prompt = self.generate_prompt(query)
-        user_name = self.user_cache.get("USER", "User")
+        # user_name = self.user_cache.get("USER", "User")
 
         # Build history with relevant file information
         relevant_files = self.resource_manager.get_files_for_agent(self.agent_type)
@@ -113,11 +113,18 @@ class BaseAgent:
         # Cache and return the response.
         self.user_cache[query] = response.text
         
-        if first_answer == '':
-            final_response = first_answer + response.text
-            return response.text, timings
-        else:
-            cleaned_response = re.sub(r"(?i)^hi\s+(" + self.user_cache.get("USER", "User") + "[!,:]?\s+)?", "", response.text).strip()
-            final_response = f"{first_answer} {cleaned_response}".strip()
+        print("First answer:", first_answer)
+        print("Response:", response.text)
+        
+        final_response = first_answer + response.text
+        return final_response, timings
+        
+        # if first_answer == '':
+        #     final_response = first_answer + response.text
+        #     return response.text, timings
+        # else:
+        #     cleaned_response = re.sub(r"(?i)^hi\s+(" + self.user_cache.get("USER", "User") + "[!,:]?\s+)?", "", response.text).strip()
+        #     # final_response = f"{first_answer} {cleaned_response}".strip()
+        #     final_response = first_answer + cleaned_response
             
-            return final_response, timings
+        #     return final_response, timings
