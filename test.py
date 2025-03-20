@@ -18,10 +18,6 @@ def ask_question(query):
         return None
 if __name__ == "__main__":
     
-    # result = reload_resources()
-    # if result:
-    #     print(result)
-    
    questions = [
     # "What is a DDoS attack?",
     # "I am at room 1, what should I do?",
@@ -55,18 +51,19 @@ if __name__ == "__main__":
     # "How do I interact with a canvas/UI?",
     # "How do I click on icons in the UI?",
     # "I'm playing the icon-matching game and I'm trying to grab icons. How can I do so?",
-    "where am i, roomname: room3",
-    "where am i? roomname: room2",
-    "I am looking at a cube that has an exit sign on it, what does it mean?",
-    "I am looking at a cube that has an exit written on it, what does it mean?",
-    "I am looking at a cube that has an x or cross sign on it, what does it mean?",
-    "I am looking at a cube that has a list and a lock sign on it, what does it mean?",
-    "I am looking at a cube that has a bomb sign on it, what does it mean?",
-    "where am i? What is my task here? roomname: room3",
-    "What is cybersecurity? What is Phishing?",
-    "Call me Sarah. What is cybersecurity?",
-    "Can you call me Noah moving forward? what is DDoS attack?",
+    # "where am i, roomname: room3",
+    # "where am i? roomname: room2",
+    # "I am looking at a cube that has an exit sign on it, what does it mean?",
+    # "I am looking at a cube that has an exit written on it, what does it mean?",
+    # "I am looking at a cube that has an x or cross sign on it, what does it mean?",
+    # "I am looking at a cube that has a list and a lock sign on it, what does it mean?",
+    # "I am looking at a cube that has a bomb sign on it, what does it mean?",
+    # "where am i? What is my task here? roomname: room3",
+    # "What is cybersecurity? What is Phishing?",
+    # "Call me Sarah. What is cybersecurity?",
+    # "Can you call me Noah moving forward? what is DDoS attack?",
     "Call me Sarah. where am i? roomname: room2",
+    "how can i tell if an ip is safe?"
     
 ]
 
