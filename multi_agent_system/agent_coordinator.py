@@ -67,6 +67,7 @@ class AgentCoordinator:
         Routes the query to the appropriate agent based on its type.
         """
         query_type = self.detect_query_type(query)
+        print(f"Routing query '{query}' to agent type '{query_type}'")
         agent = self.agents.get(query_type, self.agents["other"])
         answer, timings = agent.get_answer(query)
         return answer, timings

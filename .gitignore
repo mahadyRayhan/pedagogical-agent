@@ -63,3 +63,5 @@ ehthumbs.db
 *.~*
 *.orig
 .DS_Store
+env
+env/
